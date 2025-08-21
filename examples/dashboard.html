@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Memory Server Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 1px solid #333;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 1.1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 24px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.1);
+        }
+        
+        .stat-label {
+            color: #888;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .stat-delta {
+            font-size: 0.9rem;
+            color: #4ade80;
+            margin-top: 4px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+        
+        .memory-list {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .memory-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid #333;
+            transition: background 0.2s;
+        }
+        
+        .memory-item:hover {
+            background: #222;
+        }
+        
+        .memory-item:last-child {
+            border-bottom: none;
+        }
+        
+        .memory-key {
+            font-weight: 500;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+        
+        .memory-value {
+            color: #888;
+            font-size: 0.9rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .memory-relevance {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+        
+        .model-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .model-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .model-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #667eea;
+        }
+        
+        .model-metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .metric-label {
+            color: #888;
+        }
+        
+        .metric-value {
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #667eea;
+            transition: width 0.3s ease;
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-healthy {
+            background: #4ade80;
+            box-shadow: 0 0 8px #4ade80;
+        }
+        
+        .status-error {
+            background: #f87171;
+            box-shadow: 0 0 8px #f87171;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MCP Memory Server</h1>
+            <p class="subtitle">Intelligent middleware for Ollama with memory and learning</p>
+        </header>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Server Status</div>
+                <div class="stat-value">
+                    <span class="status-indicator status-healthy"></span>
+                    <span id="server-status">Healthy</span>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">Total Memories</div>
+                <div class="stat-value" id="total-memories">0</div>
+                <div class="stat-delta">+0 today</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">Tasks Processed</div>
+                <div class="stat-value" id="tasks-processed">0</div>
+                <div class="stat-delta">+0 this hour</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">Avg Response Time</div>
+                <div class="stat-value" id="avg-response-time">0s</div>
+                <div class="stat-delta">-0% vs yesterday</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">Model Performance</h2>
+            <div class="model-stats" id="model-stats">
+                <!-- Model cards will be inserted here -->
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">Recent Memories</h2>
+            <div class="memory-list" id="recent-memories">
+                <!-- Memory items will be inserted here -->
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">Latest Insights</h2>
+            <div class="memory-list" id="latest-insights">
+                <!-- Insights will be inserted here -->
+            </div>
+        </div>
+    </div>
+    
+    <button class="refresh-btn" onclick="refreshDashboard()">
+        Refresh
+    </button>
+    
+    <script>
+        const API_BASE = 'http://localhost:8090';
+        
+        async function fetchStats() {
+            try {
+                const response = await fetch(`${API_BASE}/api/memory/stats`);
+                const data = await response.json();
+                
+                // Update stats
+                document.getElementById('total-memories').textContent = data.totalMemories || '0';
+                document.getElementById('tasks-processed').textContent = data.recentTasks || '0';
+                
+                // Update model stats
+                const modelStatsContainer = document.getElementById('model-stats');
+                modelStatsContainer.innerHTML = '';
+                
+                if (data.modelStats) {
+                    data.modelStats.forEach(([model, stats]) => {
+                        const card = createModelCard(model, stats);
+                        modelStatsContainer.appendChild(card);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to fetch stats:', error);
+            }
+        }
+        
+        async function fetchRecentMemories() {
+            try {
+                const response = await fetch(`${API_BASE}/api/memory/search`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: '', limit: 5 })
+                });
+                const data = await response.json();
+                
+                const container = document.getElementById('recent-memories');
+                container.innerHTML = '';
+                
+                if (data.memories && data.memories.length > 0) {
+                    data.memories.forEach(memory => {
+                        const item = createMemoryItem(memory);
+                        container.appendChild(item);
+                    });
+                } else {
+                    container.innerHTML = '<div class="memory-item"><div class="memory-value">No memories yet</div></div>';
+                }
+            } catch (error) {
+                console.error('Failed to fetch memories:', error);
+            }
+        }
+        
+        async function fetchInsights() {
+            try {
+                const response = await fetch(`${API_BASE}/api/memory/insights?limit=5`);
+                const data = await response.json();
+                
+                const container = document.getElementById('latest-insights');
+                container.innerHTML = '';
+                
+                if (data.insights && data.insights.length > 0) {
+                    data.insights.forEach(insight => {
+                        const item = createInsightItem(insight);
+                        container.appendChild(item);
+                    });
+                } else {
+                    container.innerHTML = '<div class="memory-item"><div class="memory-value">No insights yet</div></div>';
+                }
+            } catch (error) {
+                console.error('Failed to fetch insights:', error);
+            }
+        }
+        
+        function createModelCard(model, stats) {
+            const card = document.createElement('div');
+            card.className = 'model-card';
+            
+            const successRate = Math.round(stats.successRate * 100);
+            const avgTime = Math.round(stats.avgResponseTime / 60000);
+            
+            card.innerHTML = `
+                <div class="model-name">${model}</div>
+                <div class="model-metric">
+                    <span class="metric-label">Success Rate</span>
+                    <span class="metric-value">${successRate}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${successRate}%"></div>
+                </div>
+                <div class="model-metric" style="margin-top: 12px;">
+                    <span class="metric-label">Avg Response</span>
+                    <span class="metric-value">${avgTime} min</span>
+                </div>
+                <div class="model-metric">
+                    <span class="metric-label">Strengths</span>
+                </div>
+                <div class="memory-value">${stats.strengths.slice(0, 2).join(', ')}</div>
+            `;
+            
+            return card;
+        }
+        
+        function createMemoryItem(memory) {
+            const item = document.createElement('div');
+            item.className = 'memory-item';
+            
+            const relevance = Math.round((memory.relevance || 0) * 100);
+            const value = typeof memory.value === 'string' ? memory.value : JSON.stringify(memory.value);
+            
+            item.innerHTML = `
+                <div class="memory-key">
+                    ${memory.key}
+                    <span class="memory-relevance">${relevance}%</span>
+                </div>
+                <div class="memory-value">${value.substring(0, 100)}...</div>
+            `;
+            
+            return item;
+        }
+        
+        function createInsightItem(insight) {
+            const item = document.createElement('div');
+            item.className = 'memory-item';
+            
+            const confidence = Math.round((insight.confidence || 0) * 100);
+            
+            item.innerHTML = `
+                <div class="memory-key">
+                    ${insight.tags.join(', ')}
+                    <span class="memory-relevance">${confidence}% confidence</span>
+                </div>
+                <div class="memory-value">${insight.content}</div>
+            `;
+            
+            return item;
+        }
+        
+        async function checkServerHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const statusElement = document.getElementById('server-status');
+                const indicator = document.querySelector('.status-indicator');
+                
+                if (response.ok) {
+                    statusElement.textContent = 'Healthy';
+                    indicator.className = 'status-indicator status-healthy';
+                } else {
+                    statusElement.textContent = 'Error';
+                    indicator.className = 'status-indicator status-error';
+                }
+            } catch (error) {
+                const statusElement = document.getElementById('server-status');
+                const indicator = document.querySelector('.status-indicator');
+                statusElement.textContent = 'Offline';
+                indicator.className = 'status-indicator status-error';
+            }
+        }
+        
+        async function refreshDashboard() {
+            const btn = document.querySelector('.refresh-btn');
+            btn.classList.add('loading');
+            
+            await Promise.all([
+                checkServerHealth(),
+                fetchStats(),
+                fetchRecentMemories(),
+                fetchInsights()
+            ]);
+            
+            btn.classList.remove('loading');
+        }
+        
+        // Initial load
+        refreshDashboard();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(refreshDashboard, 30000);
+    </script>
+</body>
+</html>

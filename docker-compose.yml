@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  memory-server:
+    build: .
+    container_name: mcp-memory-server
+    ports:
+      - "8090:8090"
+    environment:
+      - PORT=8090
+      - OLLAMA_URL=http://ollama:11434
+      - MCP_URL=http://host.docker.internal:3000
+      - BRAIN_ENABLED=true
+      - AUTO_ENRICH=true
+      - MAX_CONTEXT_TOKENS=2000
+    volumes:
+      - ./data:/app/data
+      - ~/.brain:/root/.brain:ro
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    networks:
+      - mcp-network
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - mcp-network
+
+networks:
+  mcp-network:
+    driver: bridge
+
+volumes:
+  ollama_data:

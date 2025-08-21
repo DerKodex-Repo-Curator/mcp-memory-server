@@ -1,0 +1,44 @@
+[Unit]
+Description=MCP Memory Server - Intelligent Ollama Proxy
+Documentation=https://github.com/yourusername/mcp-memory-server
+After=network.target ollama.service
+
+[Service]
+Type=simple
+User=bard
+Group=bard
+WorkingDirectory=/Users/bard/Code/mcp-memory-server
+
+# Environment
+Environment="NODE_ENV=production"
+Environment="PORT=8090"
+Environment="OLLAMA_URL=http://localhost:11434"
+Environment="BRAIN_URL=http://localhost:3000"
+Environment="LOG_LEVEL=info"
+
+# Permissions - explicitly set directories
+Environment="ALLOWED_READ_DIRS=/Users/bard/Code:/Users/bard/.brain:/Users/bard/.elvis"
+Environment="ALLOWED_WRITE_DIRS=/Users/bard/.elvis/memory-cache:/tmp/memory-server:/Users/bard/Code/mcp-elvis/enhancement-results"
+
+# Memory limits
+Environment="NODE_OPTIONS=--max-old-space-size=2048"
+
+# Execution
+ExecStartPre=/bin/mkdir -p /tmp/memory-server
+ExecStartPre=/bin/mkdir -p /Users/bard/.elvis/memory-cache
+ExecStart=/usr/local/bin/node dist/index.js
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=append:/tmp/memory-server/memory-server.log
+StandardError=append:/tmp/memory-server/memory-server-error.log
+
+[Install]
+WantedBy=multi-user.target

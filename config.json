@@ -1,0 +1,82 @@
+{
+  "name": "memory-server-config",
+  "version": "1.0.0",
+  "description": "Configuration for MCP Memory Server with proper permissions",
+  
+  "server": {
+    "port": 8090,
+    "host": "localhost",
+    "cors": {
+      "enabled": true,
+      "origins": ["*"]
+    }
+  },
+  
+  "ollama": {
+    "url": "http://localhost:11434",
+    "timeout": 300000,
+    "models": {
+      "allowed": ["llama3.2", "deepseek-r1", "mistral", "codellama"],
+      "default": "llama3.2"
+    }
+  },
+  
+  "memory": {
+    "maxContextTokens": 2000,
+    "similarityLimit": 10,
+    "relevanceThreshold": 0.3,
+    "autoEnrich": true
+  },
+  
+  "security": {
+    "rateLimits": {
+      "requestsPerMinute": 30,
+      "requestsPerHour": 500
+    },
+    "maxPromptLength": 10000,
+    "maxResponseTokens": 4096
+  },
+  
+  "storage": {
+    "brain": {
+      "enabled": true,
+      "url": "http://localhost:3000",
+      "dataDir": "~/.brain"
+    },
+    "cache": {
+      "ttl": 3600,
+      "maxSize": 1000
+    }
+  },
+  
+  "permissions": {
+    "directories": {
+      "read": [
+        "~/Code",
+        "~/.brain",
+        "~/.elvis",
+        "/tmp/memory-server"
+      ],
+      "write": [
+        "~/.elvis/memory-cache",
+        "/tmp/memory-server",
+        "~/Code/mcp-elvis/enhancement-results"
+      ]
+    },
+    "fileTypes": {
+      "allowed": [".txt", ".md", ".json", ".yaml", ".yml", ".ts", ".js", ".py"]
+    }
+  },
+  
+  "logging": {
+    "level": "info",
+    "file": "/tmp/memory-server/memory-server.log",
+    "console": true
+  },
+  
+  "plugins": {
+    "enabled": true,
+    "directory": "./plugins",
+    "autoLoad": true
+  }
+}
